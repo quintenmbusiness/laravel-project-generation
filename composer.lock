@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "c0aa3352d577ead3e27c12eed9009445",
+    "content-hash": "f7b59b9d51608510537ad2cdc73dfece",
     "packages": [
         {
             "name": "brick/math",
@@ -1276,16 +1276,16 @@
         },
         {
             "name": "laravel/prompts",
-            "version": "v0.3.11",
+            "version": "dev-main",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laravel/prompts.git",
-                "reference": "dd2a2ed95acacbcccd32fd98dee4c946ae7a7217"
+                "reference": "70550f81b4b229e275c596acb7b73895f7e0b01c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravel/prompts/zipball/dd2a2ed95acacbcccd32fd98dee4c946ae7a7217",
-                "reference": "dd2a2ed95acacbcccd32fd98dee4c946ae7a7217",
+                "url": "https://api.github.com/repos/laravel/prompts/zipball/70550f81b4b229e275c596acb7b73895f7e0b01c",
+                "reference": "70550f81b4b229e275c596acb7b73895f7e0b01c",
                 "shasum": ""
             },
             "require": {
@@ -1308,6 +1308,7 @@
             "suggest": {
                 "ext-pcntl": "Required for the spinner to be animated."
             },
+            "default-branch": true,
             "type": "library",
             "extra": {
                 "branch-alias": {
@@ -1329,9 +1330,9 @@
             "description": "Add beautiful and user-friendly forms to your command-line applications.",
             "support": {
                 "issues": "https://github.com/laravel/prompts/issues",
-                "source": "https://github.com/laravel/prompts/tree/v0.3.11"
+                "source": "https://github.com/laravel/prompts/tree/main"
             },
-            "time": "2026-01-27T02:55:06+00:00"
+            "time": "2026-01-28T15:52:53+00:00"
         },
         {
             "name": "laravel/serializable-closure",
@@ -7292,8 +7293,10 @@
     ],
     "aliases": [],
     "minimum-stability": "dev",
-    "stability-flags": {},
-    "prefer-stable": true,
+    "stability-flags": {
+        "laravel/prompts": 20
+    },
+    "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {
         "php": "^8.1"

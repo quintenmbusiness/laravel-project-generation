@@ -4,24 +4,26 @@ namespace quintenmbusiness\LaravelProjectGeneration\ClassGeneration;
 
 use quintenmbusiness\LaravelAnalyzer\Modules\Database\DatabaseModule;
 use quintenmbusiness\LaravelAnalyzer\Modules\Database\DTO\DatabaseDTO;
-use quintenmbusiness\LaravelProjectGeneration\DataLayerGeneration\ModelGenerator;
 use Symfony\Component\Process\Process;
 class GenerationService
 {
     public DatabaseDTO $database;
 
-    public function __construct()
+    public function __construct(public string|null $connection = null)
     {
-        $this->database = (new DatabaseModule())->getDatabase();
+        $this->database = (new DatabaseModule())->getDatabase($connection);
     }
 
-    public function generateProject(): void
+    public function generateProject(array $classesToGenerate): array
     {
         foreach($this->database->tables as $table) {
-            (new ModelGenerator($table))->generate();
+            foreach ($classesToGenerate as $class) {
+                (new $class($table))->generate();
+            }
         }
 
         $this->runPhpCsFixer();
+        return [];
     }
 
     public function runPhpCsFixer(string $targetPath = null): void
