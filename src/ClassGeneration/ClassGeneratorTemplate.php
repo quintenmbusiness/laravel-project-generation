@@ -3,6 +3,7 @@
 namespace quintenmbusiness\LaravelProjectGeneration\ClassGeneration;
 
 use Illuminate\Support\Collection;
+use quintenmbusiness\LaravelAnalyzer\Modules\Database\DTO\TableDTO;
 use quintenmbusiness\LaravelProjectGeneration\Tools\FileGenerator;
 
 abstract class ClassGeneratorTemplate
@@ -13,7 +14,7 @@ abstract class ClassGeneratorTemplate
     public Collection $uses;
     public FileGenerator $fileGenerator;
 
-    public function __construct() {
+    public function __construct(public TableDTO $table, public array $classesToGenerate) {
         $this->methods = new Collection();
         $this->properties = new Collection();
         $this->imports = new Collection();
