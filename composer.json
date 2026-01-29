@@ -1,0 +1,26 @@
+{
+  "name": "quintenmbusiness/laravel-project-generation",
+  "description": "Generates all the classes you can think of for your laravel application using only migration files",
+  "type": "library",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Quinten Muijser",
+      "email": "quintenm.business@outlook.com"
+    }
+  ],
+  "require": {
+    "php": "^8.1",
+    "quintenmbusiness/laravel-analyzer": "1.3"
+  },
+  "require-dev": {
+    "friendsofphp/php-cs-fixer": "^3.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "quintenmbusiness\\LaravelProjectGeneration\\": "src/"
+    }
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": false
+}
