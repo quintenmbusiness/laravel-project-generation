@@ -2,7 +2,7 @@
 
 Generate Laravel Eloquent models from your database schema using LaravelAnalyzer.
 
-This package currently generates **only Eloquent models**.
+This package currently generates **only Eloquent models + Factories**.
 
 ---
 
@@ -59,7 +59,7 @@ Run the interactive generator command:
     - C: Tables only
     - D: Nothing
 - Select class types to generate
-    - Currently supported: Model
+    - Currently supported: Model, Factory
 - Optional file tree preview
 - Multiple safety confirmations before overwriting files
 
@@ -67,7 +67,6 @@ Run the interactive generator command:
 
 ## Output
 
-- Models are generated in `app/Models`
 - Existing files are overwritten after confirmation
 - Relationships are inferred using LaravelAnalyzer
 
