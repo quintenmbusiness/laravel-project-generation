@@ -9,7 +9,7 @@ use quintenmbusiness\LaravelAnalyzer\Modules\Database\DTO\Relationships\Relation
 use quintenmbusiness\LaravelAnalyzer\Modules\Database\Enum\ModelRelationshipType;
 use quintenmbusiness\LaravelProjectGeneration\ClassGeneration\ClassGeneratorTemplate;
 
-class ModelGeneratorTemplate extends ClassGeneratorTemplate
+class ModelGenerator extends ClassGeneratorTemplate
 {
     public function __construct(public TableDTO $table)
     {

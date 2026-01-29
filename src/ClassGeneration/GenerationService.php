@@ -4,7 +4,7 @@ namespace quintenmbusiness\LaravelProjectGeneration\ClassGeneration;
 
 use quintenmbusiness\LaravelAnalyzer\Modules\Database\DatabaseModule;
 use quintenmbusiness\LaravelAnalyzer\Modules\Database\DTO\DatabaseDTO;
-use quintenmbusiness\LaravelProjectGeneration\DataLayerGeneration\ModelGeneratorTemplate;
+use quintenmbusiness\LaravelProjectGeneration\DataLayerGeneration\ModelGenerator;
 use Symfony\Component\Process\Process;
 class GenerationService
 {
@@ -18,7 +18,7 @@ class GenerationService
     public function generateProject(): void
     {
         foreach($this->database->tables as $table) {
-            (new ModelGeneratorTemplate($table))->generate();
+            (new ModelGenerator($table))->generate();
         }
 
         $this->runPhpCsFixer();
