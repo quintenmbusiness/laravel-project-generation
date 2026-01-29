@@ -5,6 +5,7 @@ namespace quintenmbusiness\LaravelProjectGeneration\Console;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Config;
 use quintenmbusiness\LaravelProjectGeneration\ClassGeneration\GenerationService;
+use quintenmbusiness\LaravelProjectGeneration\DataLayerGeneration\FactoryGenerator;
 use quintenmbusiness\LaravelProjectGeneration\DataLayerGeneration\ModelGenerator;
 use Symfony\Component\Console\Helper\Table;
 use function Laravel\Prompts\confirm;
@@ -108,9 +109,11 @@ class GenerateProjectCommand extends Command
             label: 'Which classes should be generated?',
             options: [
                 ModelGenerator::class => 'Model',
+                FactoryGenerator::class => 'Factory',
             ],
             default: [
                 'Model',
+                'Factory',
             ],
             required: true
         );
@@ -198,9 +201,25 @@ class GenerateProjectCommand extends Command
         $this->info('Planned file structure');
         $this->line('');
 
-        $this->line('app');
-        $this->line('├── Models');
+        $hasAppContent      = in_array(ModelGenerator::class, $this->classTypes);
+        $hasDatabaseContent = in_array(FactoryGenerator::class, $this->classTypes);
+
+        $this->line('Root');
+
+        if ($hasAppContent) {
+            $this->line('├── app');
+
+            if (in_array(ModelGenerator::class, $this->classTypes)) {
+                $this->line('│   └── Models');
+            }
+        }
+
+        if ($hasDatabaseContent) {
+            $this->line('├── database');
+            $this->line('│   └── factories');
+        }
     }
+
 
     protected function abort(): void
     {

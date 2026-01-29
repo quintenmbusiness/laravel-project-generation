@@ -18,7 +18,7 @@ class GenerationService
     {
         foreach($this->database->tables as $table) {
             foreach ($classesToGenerate as $class) {
-                (new $class($table))->generate();
+                (new $class($table, $classesToGenerate))->generate();
             }
         }
 

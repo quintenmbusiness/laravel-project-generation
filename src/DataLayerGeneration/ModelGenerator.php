@@ -2,8 +2,9 @@
 
 namespace quintenmbusiness\LaravelProjectGeneration\DataLayerGeneration;
 
+use Illuminate\Database\Eloquent\Attributes\UseFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Support\Str;
-use quintenmbusiness\LaravelAnalyzer\Modules\Database\DTO\TableDTO;
 use quintenmbusiness\LaravelAnalyzer\Modules\Database\DTO\Relationships\RelationshipDTO;
 use quintenmbusiness\LaravelAnalyzer\Modules\Database\DTO\Relationships\RelationThroughDTO;
 use quintenmbusiness\LaravelAnalyzer\Modules\Database\Enum\ModelRelationshipType;
@@ -11,11 +12,6 @@ use quintenmbusiness\LaravelProjectGeneration\ClassGeneration\ClassGeneratorTemp
 
 class ModelGenerator extends ClassGeneratorTemplate
 {
-    public function __construct(public TableDTO $table)
-    {
-        parent::__construct();
-    }
-
     public function getNamespace(): string
     {
         return 'App\Models';
@@ -201,8 +197,16 @@ class ModelGenerator extends ClassGeneratorTemplate
         $this->buildMethod($name, $body, $relationClass);
     }
 
+    public function usesFactory(): void
+    {
+        if(in_array(FactoryGenerator::class,$this->classesToGenerate)) {
+            $this->uses->add(HasFactory::class);
+        }
+    }
+
     public function generate(): void
     {
+        $this->usesFactory();
         $this->buildHeaderImports();
         $this->buildTableProperty();
         $this->buildTimestampsProperty();
