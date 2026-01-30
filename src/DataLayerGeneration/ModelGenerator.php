@@ -2,24 +2,19 @@
 
 namespace quintenmbusiness\LaravelProjectGeneration\DataLayerGeneration;
 
-use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Support\Str;
 use quintenmbusiness\LaravelAnalyzer\Modules\Database\DTO\Relationships\RelationshipDTO;
 use quintenmbusiness\LaravelAnalyzer\Modules\Database\DTO\Relationships\RelationThroughDTO;
 use quintenmbusiness\LaravelAnalyzer\Modules\Database\Enum\ModelRelationshipType;
 use quintenmbusiness\LaravelProjectGeneration\ClassGeneration\ClassGeneratorTemplate;
+use quintenmbusiness\LaravelProjectGeneration\Tools\ClassType;
 
 class ModelGenerator extends ClassGeneratorTemplate
 {
-    public function getNamespace(): string
+    public function getClassType(): ClassType
     {
-        return 'App\Models';
-    }
-
-    public function getClassName(): string
-    {
-        return Str::studly(Str::singular($this->table->name));
+        return ClassType::MODEL;
     }
 
     public function getPath(): string
@@ -27,11 +22,6 @@ class ModelGenerator extends ClassGeneratorTemplate
         $dir = base_path('app/Models');
         if (!is_dir($dir)) mkdir($dir, 0755, true);
         return $dir . DIRECTORY_SEPARATOR . $this->getClassName() . '.php';
-    }
-
-    public function getClassExtends(): ?string
-    {
-        return 'Model';
     }
 
     protected function addImport(string $fqcn): void
@@ -44,12 +34,15 @@ class ModelGenerator extends ClassGeneratorTemplate
 
     protected function addModelImport(string $class): void
     {
-        $this->addImport('App\\Models\\' . $class);
+        $this->addImport($this->getClassType()->namespace($this->table->name) . '\\' . $class);
     }
 
     protected function buildHeaderImports(): void
     {
-        $this->addImport('Illuminate\\Database\\Eloquent\\Model');
+        $parentImport = $this->getClassType()->extendsImport();
+        if ($parentImport) {
+            $this->addImport($parentImport);
+        }
     }
 
     protected function inferCasts(): array
@@ -160,7 +153,6 @@ class ModelGenerator extends ClassGeneratorTemplate
 
     protected function buildThroughRelationMethods(): void
     {
-
         foreach ($this->table->relationsThrough as $through) {
             $this->buildThroughRelationMethod($through);
         }
@@ -199,7 +191,7 @@ class ModelGenerator extends ClassGeneratorTemplate
 
     public function usesFactory(): void
     {
-        if(in_array(FactoryGenerator::class,$this->classesToGenerate)) {
+        if (in_array(FactoryGenerator::class, $this->classesToGenerate)) {
             $this->uses->add(HasFactory::class);
         }
     }

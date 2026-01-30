@@ -4,6 +4,7 @@ namespace quintenmbusiness\LaravelProjectGeneration\ClassGeneration;
 
 use Illuminate\Support\Collection;
 use quintenmbusiness\LaravelAnalyzer\Modules\Database\DTO\TableDTO;
+use quintenmbusiness\LaravelProjectGeneration\Tools\ClassType;
 use quintenmbusiness\LaravelProjectGeneration\Tools\FileGenerator;
 
 abstract class ClassGeneratorTemplate
@@ -22,10 +23,27 @@ abstract class ClassGeneratorTemplate
         $this->fileGenerator = new FileGenerator();
     }
 
-    public abstract function getNamespace(): string;
-    public abstract function getClassName(): string;
-    public abstract function getClassExtends(): null|string;
+    public abstract function getClassType(): ClassType;
     public abstract function getPath(): string;
+    public function getNamespace(): string
+    {
+        return $this->getClassType()->namespace($this->table->name);
+    }
+
+    public function getClassName(): string
+    {
+        return $this->getClassType()->basename($this->table->name);
+    }
+
+    public function getClassExtends(): ?string
+    {
+        return $this->getClassType()->extendsBasename();
+    }
+
+    public function getClassExtendsImports(): ?string
+    {
+        return $this->getClassType()->extendsImport();
+    }
 
     public function writeClass(): string
     {
@@ -61,6 +79,10 @@ abstract class ClassGeneratorTemplate
 
         if ($this->getClassExtends()) {
             $decl .= ' extends ' . $this->getClassExtends();
+        }
+
+        if ($this->getClassExtendsImports()){
+            $this->imports->push($this->getClassExtendsImports());
         }
 
         return $decl . ' {';

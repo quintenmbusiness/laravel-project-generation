@@ -7,22 +7,13 @@ use quintenmbusiness\LaravelAnalyzer\Modules\Database\DTO\TableDTO;
 use quintenmbusiness\LaravelAnalyzer\Modules\Database\DTO\Relationships\RelationshipDTO;
 use quintenmbusiness\LaravelAnalyzer\Modules\Database\Enum\ModelRelationshipType;
 use quintenmbusiness\LaravelProjectGeneration\ClassGeneration\ClassGeneratorTemplate;
+use quintenmbusiness\LaravelProjectGeneration\Tools\ClassType;
 
 class FactoryGenerator extends ClassGeneratorTemplate
 {
-    public function __construct(public TableDTO $table, public array $classesToGenerate = [])
+    public function getClassType(): ClassType
     {
-        parent::__construct($table, $classesToGenerate);
-    }
-
-    public function getNamespace(): string
-    {
-        return 'Database\Factories';
-    }
-
-    public function getClassName(): string
-    {
-        return Str::studly(Str::singular($this->table->name)) . 'Factory';
+        return ClassType::FACTORY;
     }
 
     public function getPath(): string
@@ -30,11 +21,6 @@ class FactoryGenerator extends ClassGeneratorTemplate
         $dir = base_path('database/Factories');
         if (!is_dir($dir)) mkdir($dir, 0755, true);
         return $dir . DIRECTORY_SEPARATOR . $this->getClassName() . '.php';
-    }
-
-    public function getClassExtends(): ?string
-    {
-        return 'Factory';
     }
 
     protected function addImport(string $fqcn): void
@@ -45,19 +31,20 @@ class FactoryGenerator extends ClassGeneratorTemplate
 
     protected function addModelImport(string $class): void
     {
-        $this->addImport('App\\Models\\' . $class);
+        $this->addImport(ClassType::MODEL->namespace($this->table->name) . '\\' . $class);
     }
 
     protected function buildHeaderImports(): void
     {
-        $this->addImport('Illuminate\\Database\\Eloquent\\Factories\\Factory');
+        $parentImport = $this->getClassType()->extendsImport();
+        if ($parentImport) $this->addImport($parentImport);
         $this->addImport('Illuminate\\Support\\Str');
         $this->addImport('Illuminate\\Support\\Facades\\DB');
     }
 
     protected function getModelClassName(): string
     {
-        return Str::studly(Str::singular($this->table->name));
+        return ClassType::MODEL->basename($this->table->name);
     }
 
     protected function buildModelProperty(): void
@@ -110,7 +97,7 @@ class FactoryGenerator extends ClassGeneratorTemplate
         foreach ($this->table->relations as $relation) {
             if ($relation->type !== ModelRelationshipType::BELONGS_TO) continue;
 
-            $relatedClass = $relation->relatedModel ?? Str::studly(Str::singular($relation->relatedTable));
+            $relatedClass = $relation->relatedModel ?? ClassType::MODEL->basename($relation->relatedTable);
             $var = $this->factoryVariableNameForRelation($relation);
 
             if (!isset($declared[$var])) {
