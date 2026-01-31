@@ -7,7 +7,11 @@ use Illuminate\Support\Facades\Config;
 use quintenmbusiness\LaravelProjectGeneration\ClassGeneration\GenerationService;
 use quintenmbusiness\LaravelProjectGeneration\DataLayerGeneration\FactoryGenerator;
 use quintenmbusiness\LaravelProjectGeneration\DataLayerGeneration\ModelGenerator;
+use quintenmbusiness\LaravelProjectGeneration\DataLayerGeneration\RepositoryGenerator;
 use quintenmbusiness\LaravelProjectGeneration\DataLayerGeneration\Tests\ModelUnitTestsGenerator;
+use quintenmbusiness\LaravelProjectGeneration\DataLayerGeneration\Tests\RepositoryTestGenerator;
+use quintenmbusiness\LaravelProjectGeneration\LogicLayerGeneration\ServiceGenerator;
+use quintenmbusiness\LaravelProjectGeneration\LogicLayerGeneration\Tests\ServiceTestGenerator;
 use Symfony\Component\Console\Helper\Table;
 use function Laravel\Prompts\confirm;
 use function Laravel\Prompts\multiSelect;
@@ -109,14 +113,24 @@ class GenerateProjectCommand extends Command
         $this->classTypes = multiSelect(
             label: 'Which classes should be generated?',
             options: [
-                ModelGenerator::class => 'Model',
                 FactoryGenerator::class => 'Factory',
+                ModelGenerator::class => 'Model',
+                RepositoryGenerator::class => 'Repository',
+                ServiceGenerator::class => 'Service',
+
                 ModelUnitTestsGenerator::class => 'ModelTest',
+                RepositoryTestGenerator::class => 'RepositoryTest',
+                ServiceTestGenerator::class => 'ServiceTest',
             ],
             default: [
                 'Model',
                 'Factory',
+                'Repository',
+                'Service',
+
                 'ModelTest',
+                'RepositoryTest',
+                'ServiceTest',
             ],
             required: true
         );
