@@ -42,83 +42,85 @@ class ServiceGenerator extends ClassGeneratorTemplate
 
     protected function buildHeaderImports(): void
     {
-        $this->addImport('Illuminate\\Database\\Eloquent\\Collection');
-        $this->addImport('Illuminate\\Contracts\\Pagination\\LengthAwarePaginator');
+        $this->addImport(Collection::class);
+        $this->addImport(LengthAwarePaginator::class);
     }
 
     protected function buildRepositoryAccessor(string $repositoryClass): void
     {
         $returnType = $repositoryClass . 'Repository';
-        $body = "return app({$returnType}::class);";
-        $this->buildMethod('repository', $body, $returnType);
+        $this->buildMethod('repository', "return app({$returnType}::class);", $returnType);
     }
 
     protected function buildServiceMethods(string $modelClass, string $repositoryClass): void
     {
+        $pk = $this->table->primaryKey->name ?? 'id';
+        $pkType = 'string|int';
+
         $this->buildMethod(
             'getAll',
-            'if ($perPage > 0) {
-    return $this->repository()->paginate($perPage);
-}
-return $this->repository()->all();',
-            'Collection|LengthAwarePaginator',
-            'int $perPage = 0'
+            body: 'if ($perPage > 0) {' . PHP_EOL .
+            '    return $this->repository()->paginate($perPage);' . PHP_EOL .
+            '}' . PHP_EOL .
+            'return $this->repository()->all();',
+            returnType: 'Collection|LengthAwarePaginator',
+            arguments: 'int $perPage = 0'
         );
 
         $this->buildMethod(
             'get',
-            'return $this->repository()->find($id);',
-            "?{$modelClass}",
-            'int $id'
+            body: "return \$this->repository()->find(\$$pk);",
+            returnType: "?{$modelClass}",
+            arguments: "$pkType \$$pk"
         );
 
         $this->buildMethod(
             'getOrFail',
-            'return $this->repository()->findOrFail($id);',
-            $modelClass,
-            'int $id'
+            body: "return \$this->repository()->findOrFail(\$$pk);",
+            returnType: $modelClass,
+            arguments: "$pkType \$$pk"
         );
 
         $this->buildMethod(
             'findBy',
-            'return $this->repository()->findBy($criteria);',
-            "?{$modelClass}",
-            'array $criteria'
+            body: 'return $this->repository()->findBy($criteria);',
+            returnType: "?{$modelClass}",
+            arguments: 'array $criteria'
         );
 
         $this->buildMethod(
             'create',
-            'return $this->repository()->create($data);',
-            $modelClass,
-            'array $data'
+            body: 'return $this->repository()->create($data);',
+            returnType: $modelClass,
+            arguments: 'array $data'
         );
 
         $this->buildMethod(
             'update',
-            'return $this->repository()->update($id, $data);',
-            "?{$modelClass}",
-            'int $id, array $data'
+            body: "return \$this->repository()->update(\$$pk, \$data);",
+            returnType: "?{$modelClass}",
+            arguments: "$pkType \$$pk, array \$data"
         );
 
         $this->buildMethod(
             'updateWhere',
-            'return $this->repository()->updateWhere($criteria, $data);',
-            'int',
-            'array $criteria, array $data'
+            body: 'return $this->repository()->updateWhere($criteria, $data);',
+            returnType: 'int',
+            arguments: 'array $criteria, array $data'
         );
 
         $this->buildMethod(
             'delete',
-            'return $this->repository()->delete($id);',
-            'bool',
-            'int $id'
+            body: "return \$this->repository()->delete(\$$pk);",
+            returnType: 'bool',
+            arguments: "$pkType \$$pk"
         );
 
         $this->buildMethod(
             'deleteWhere',
-            'return $this->repository()->deleteWhere($criteria);',
-            'int',
-            'array $criteria'
+            body: 'return $this->repository()->deleteWhere($criteria);',
+            returnType: 'int',
+            arguments: 'array $criteria'
         );
     }
 

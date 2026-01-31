@@ -48,31 +48,30 @@ class ServiceTestGenerator extends ClassGeneratorTemplate
 
     protected function buildTestMethods(string $modelClass, string $repositoryClass, string $serviceClass): void
     {
+        $pk = $this->table->primaryKey->name ?? 'id';
+
         $this->buildMethod(
             'test_service_resolves',
-            '$service = app(' . $serviceClass . '::class);
-$this->assertNotNull($service);',
-            'void'
+            body: '$service = app(' . $serviceClass . '::class);' .
+            '$this->assertNotNull($service);'
         );
 
         $this->buildMethod(
             'test_service_create_and_get',
-            '$service = app(' . $serviceClass . '::class);
-$model = ' . $modelClass . '::factory()->create();
-$result = $service->getOrFail($model->id);
-$this->assertNotNull($result);',
-            'void'
+            body: '$service = app(' . $serviceClass . '::class);' .
+            '$model = ' . $modelClass . '::factory()->create();' .
+            '$result = $service->getOrFail($model->' . $pk . ');' .
+            '$this->assertNotNull($result);'
         );
 
         $this->buildMethod(
             'test_service_update_and_delete',
-            '$service = app(' . $serviceClass . '::class);
-$model = ' . $modelClass . '::factory()->create();
-$updated = $service->update($model->id, []);
-$this->assertNotNull($updated);
-$deleted = $service->delete($model->id);
-$this->assertTrue($deleted);',
-            'void'
+            body: '$service = app(' . $serviceClass . '::class);' .
+            '$model = ' . $modelClass . '::factory()->create();' .
+            '$updated = $service->update($model->' . $pk . ', []);' .
+            '$this->assertNotNull($updated);' .
+            '$deleted = $service->delete($model->' . $pk . ');' .
+            '$this->assertTrue($deleted);'
         );
     }
 
@@ -84,7 +83,6 @@ $this->assertTrue($deleted);',
         $serviceClass = $base . 'Service';
 
         $this->buildHeaderImports($modelClass, $repositoryClass, $serviceClass);
-
         $this->buildTestMethods($modelClass, $repositoryClass, $serviceClass);
 
         $this->fileGenerator->createFile($this->getPath(), $this->writeClass());

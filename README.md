@@ -24,7 +24,7 @@ Install the package via Composer:
     composer require quintenmbusiness/laravel-project-generation
 
 This package requires PHP 8.1+ and will automatically install:
-- quintenmbusiness/laravel-analyzer (v1.3)
+- quintenmbusiness/laravel-analyzer (v1.3.1)
 - laravel/prompts
 
 ---

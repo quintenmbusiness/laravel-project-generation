@@ -20,13 +20,18 @@ class ModelGenerator extends ClassGeneratorTemplate
     public function getPath(): string
     {
         $dir = base_path('app/Models');
-        if (!is_dir($dir)) mkdir($dir, 0755, true);
+
+        if (!is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+
         return $dir . DIRECTORY_SEPARATOR . $this->getClassName() . '.php';
     }
 
     protected function addImport(string $fqcn): void
     {
         $fqcn = trim($fqcn, '\\');
+
         if (!$this->imports->contains($fqcn)) {
             $this->imports->add($fqcn);
         }
@@ -40,6 +45,7 @@ class ModelGenerator extends ClassGeneratorTemplate
     protected function buildHeaderImports(): void
     {
         $parentImport = $this->getClassType()->extendsImport();
+
         if ($parentImport) {
             $this->addImport($parentImport);
         }
@@ -50,7 +56,7 @@ class ModelGenerator extends ClassGeneratorTemplate
         $casts = [];
 
         foreach ($this->table->columns as $col) {
-            $raw = strtolower($col->rawType ?? '');
+            $raw  = strtolower($col->rawType ?? '');
             $name = $col->name;
 
             if (str_contains($raw, 'tinyint(1)')) {
@@ -72,10 +78,24 @@ class ModelGenerator extends ClassGeneratorTemplate
         $this->buildProperty('table', '', 'protected', false, $this->exportString($this->table->name));
     }
 
+    protected function buildPrimaryKeyProperty(): void
+    {
+        $primaryKey = $this->table->primaryKey ?? null;
+
+        if ($primaryKey) {
+            $this->buildProperty('primaryKey', '', 'protected', false, $this->exportString($primaryKey->name));
+
+            if (!$primaryKey->autoIncrement) {
+                $this->buildProperty('incrementing', '', 'public', false, 'false');
+            }
+        }
+    }
+
     protected function buildTimestampsProperty(): void
     {
         $hasCreated = $this->table->columns->contains(fn($c) => $c->name === 'created_at');
         $hasUpdated = $this->table->columns->contains(fn($c) => $c->name === 'updated_at');
+
         $this->buildProperty('timestamps', '', 'public', false, ($hasCreated && $hasUpdated) ? 'true' : 'false');
     }
 
@@ -103,6 +123,7 @@ class ModelGenerator extends ClassGeneratorTemplate
     protected function buildCastsProperty(): void
     {
         $casts = $this->inferCasts();
+
         if (!$casts) return;
 
         $entries = [];
@@ -122,14 +143,13 @@ class ModelGenerator extends ClassGeneratorTemplate
 
     protected function buildRelationMethod(RelationshipDTO $relation): void
     {
-        $relatedClass = $relation->relatedModel
-            ?? Str::studly(Str::singular($relation->relatedTable));
+        $relatedClass = $relation->relatedModel ?? Str::studly(Str::singular($relation->relatedTable));
 
         $this->addModelImport($relatedClass);
 
         $method = $relation->relationName;
-        $fk = $relation->foreignKey;
-        $lk = $relation->localKey ?? 'id';
+        $fk     = $relation->foreignKey;
+        $lk     = $relation->localKey ?? 'id';
 
         match ($relation->type) {
             ModelRelationshipType::BELONGS_TO => $this->relationMethod(
@@ -137,12 +157,12 @@ class ModelGenerator extends ClassGeneratorTemplate
                 $method,
                 "return \$this->belongsTo({$relatedClass}::class, '{$fk}', '{$lk}');"
             ),
-            ModelRelationshipType::HAS_MANY => $this->relationMethod(
+            ModelRelationshipType::HAS_MANY   => $this->relationMethod(
                 'HasMany',
                 $method,
                 "return \$this->hasMany({$relatedClass}::class, '{$fk}', '{$lk}');"
             ),
-            ModelRelationshipType::HAS_ONE => $this->relationMethod(
+            ModelRelationshipType::HAS_ONE    => $this->relationMethod(
                 'HasOne',
                 $method,
                 "return \$this->hasOne({$relatedClass}::class, '{$fk}', '{$lk}');"
@@ -160,7 +180,7 @@ class ModelGenerator extends ClassGeneratorTemplate
 
     protected function buildThroughRelationMethod(RelationThroughDTO $through): void
     {
-        $final = Str::studly(Str::singular($through->relatedTable));
+        $final       = Str::studly(Str::singular($through->relatedTable));
         $throughClass = Str::studly(Str::singular($through->throughTable));
 
         $this->addModelImport($final);
@@ -201,11 +221,13 @@ class ModelGenerator extends ClassGeneratorTemplate
         $this->usesFactory();
         $this->buildHeaderImports();
         $this->buildTableProperty();
+        $this->buildPrimaryKeyProperty();
         $this->buildTimestampsProperty();
         $this->buildFillableOrGuarded();
         $this->buildCastsProperty();
         $this->buildRelationshipMethods();
         $this->buildThroughRelationMethods();
+
         $this->fileGenerator->createFile($this->getPath(), $this->writeClass());
     }
 }

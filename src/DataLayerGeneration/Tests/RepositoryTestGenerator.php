@@ -42,32 +42,34 @@ class RepositoryTestGenerator extends ClassGeneratorTemplate
 
     protected function buildTestMethods(string $modelClass, string $repositoryClass): void
     {
+        $pk = $this->table->primaryKey->name ?? 'id';
+
         $this->buildMethod(
             'test_create_and_find',
-            '$repo = app(' . $repositoryClass . 'Repository::class);
-$model = ' . $modelClass . '::factory()->create();
-$found = $repo->find($model->id);
-$this->assertNotNull($found);',
+            '$repo = app(' . $repositoryClass . 'Repository::class);' .
+            '$model = ' . $modelClass . '::factory()->create();' .
+            '$found = $repo->find($model->' . $pk . ');' .
+            '$this->assertNotNull($found);',
             'void'
         );
 
         $this->buildMethod(
             'test_update_and_delete',
-            '$repo = app(' . $repositoryClass . 'Repository::class);
-$model = ' . $modelClass . '::factory()->create();
-$updated = $repo->update($model->id, []);
-$this->assertNotNull($updated);
-$deleted = $repo->delete($model->id);
-$this->assertTrue($deleted);',
+            '$repo = app(' . $repositoryClass . 'Repository::class);' .
+            '$model = ' . $modelClass . '::factory()->create();' .
+            '$updated = $repo->update($model->' . $pk . ', []);' .
+            '$this->assertNotNull($updated);' .
+            '$deleted = $repo->delete($model->' . $pk . ');' .
+            '$this->assertTrue($deleted);',
             'void'
         );
 
         $this->buildMethod(
             'test_find_by_and_pagination',
-            '$repo = app(' . $repositoryClass . 'Repository::class);
-' . $modelClass . '::factory()->create();
-$result = $repo->paginate();
-$this->assertNotNull($result);',
+            '$repo = app(' . $repositoryClass . 'Repository::class);' .
+            $modelClass . '::factory()->create();' .
+            '$result = $repo->paginate();' .
+            '$this->assertNotNull($result);',
             'void'
         );
     }
@@ -79,7 +81,6 @@ $this->assertNotNull($result);',
         $repositoryClass = $base;
 
         $this->buildHeaderImports($modelClass, $repositoryClass);
-
         $this->buildTestMethods($modelClass, $repositoryClass);
 
         $this->fileGenerator->createFile($this->getPath(), $this->writeClass());

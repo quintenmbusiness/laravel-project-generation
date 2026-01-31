@@ -37,86 +37,89 @@ class RepositoryGenerator extends ClassGeneratorTemplate
 
     protected function buildHeaderImports(): void
     {
-        $this->addImport('Illuminate\\Database\\Eloquent\\Collection');
-        $this->addImport('Illuminate\\Contracts\\Pagination\\LengthAwarePaginator');
+        $this->addImport(Collection::class);
+        $this->addImport(LengthAwarePaginator::class);
     }
 
     protected function buildRepositoryMethods(string $modelClass): void
     {
+        $pk = $this->table->primaryKey->name ?? 'id';
+        $pkType = 'string|int';
+
         $this->buildMethod(
             'all',
-            'return '.$modelClass.'::get($columns);',
-            'Collection',
-            "array \$columns = ['*']"
+            body: 'return ' . $modelClass . '::get($columns);',
+            returnType: 'Collection',
+            arguments: "array \$columns = ['*']"
         );
 
         $this->buildMethod(
             'paginate',
-            'return '.$modelClass.'::paginate($perPage, $columns);',
-            'LengthAwarePaginator',
-            "int \$perPage = 15, array \$columns = ['*']"
+            body: 'return ' . $modelClass . '::paginate($perPage, $columns);',
+            returnType: 'LengthAwarePaginator',
+            arguments: "int \$perPage = 15, array \$columns = ['*']"
         );
 
         $this->buildMethod(
             'find',
-            'return '.$modelClass.'::find($id, $columns);',
-            "?{$modelClass}",
-            "int \$id, array \$columns = ['*']"
+            body: "return {$modelClass}::find(\${$pk}, \$columns);",
+            returnType: "?{$modelClass}",
+            arguments: "$pkType \${$pk}, array \$columns = ['*']"
         );
 
         $this->buildMethod(
             'findOrFail',
-            'return '.$modelClass.'::findOrFail($id, $columns);',
-            $modelClass,
-            "int \$id, array \$columns = ['*']"
+            body: "return {$modelClass}::findOrFail(\${$pk}, \$columns);",
+            returnType: $modelClass,
+            arguments: "$pkType \${$pk}, array \$columns = ['*']"
         );
 
         $this->buildMethod(
             'findBy',
-            'return '.$modelClass.'::where($criteria)->first($columns);',
-            "?{$modelClass}",
-            "array \$criteria, array \$columns = ['*']"
+            body: "return {$modelClass}::where(\$criteria)->first(\$columns);",
+            returnType: "?{$modelClass}",
+            arguments: "array \$criteria, array \$columns = ['*']"
         );
 
         $this->buildMethod(
             'create',
-            'return '.$modelClass.'::create($data);',
-            $modelClass,
-            'array $data'
+            body: "return {$modelClass}::create(\$data);",
+            returnType: $modelClass,
+            arguments: 'array $data'
         );
 
         $this->buildMethod(
             'update',
-            ' $record = $this->find($id);
-  if (!$record) return null;
-  $record->fill($data);
-  $record->save();
-  return $record;',
-            "?{$modelClass}",
-            'int $id, array $data'
+            body: "\$record = \$this->find(\${$pk});
+if (!\$record) return null;
+\$record->fill(\$data);
+\$record->save();
+return \$record;",
+            returnType: "?{$modelClass}",
+            arguments: "$pkType \${$pk}, array \$data"
         );
 
         $this->buildMethod(
             'updateWhere',
-            'return '.$modelClass.'::where($criteria)->update($data);',
-            'int',
-            'array $criteria, array $data'
+            body: "return {$modelClass}::where(\$criteria)->update(\$data);",
+            returnType: 'int',
+            arguments: 'array $criteria, array $data'
         );
 
         $this->buildMethod(
             'delete',
-            ' $record = $this->find($id);
-  if (!$record) return false;
-  return (bool) $record->delete();',
-            'bool',
-            'int $id'
+            body: "\$record = \$this->find(\${$pk});
+if (!\$record) return false;
+return (bool) \$record->delete();",
+            returnType: 'bool',
+            arguments: "$pkType \${$pk}"
         );
 
         $this->buildMethod(
             'deleteWhere',
-            'return '.$modelClass.'::where($criteria)->delete();',
-            'int',
-            'array $criteria'
+            body: "return {$modelClass}::where(\$criteria)->delete();",
+            returnType: 'int',
+            arguments: 'array $criteria'
         );
     }
 
@@ -125,7 +128,6 @@ class RepositoryGenerator extends ClassGeneratorTemplate
         $modelClass = Str::studly(Str::singular($this->table->name));
 
         $this->addModelImport($modelClass);
-
         $this->buildHeaderImports();
         $this->buildRepositoryMethods($modelClass);
 
