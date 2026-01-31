@@ -28,24 +28,25 @@ class GenerationService
 
     public function runPhpCsFixer(string $targetPath = null): void
     {
-        $targetPath = $targetPath ?? base_path();
-        $targetPath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $targetPath);
+        try {
+            $targetPath = $targetPath ?? base_path();
+            $targetPath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $targetPath);
 
-        $configPath = base_path('.php-cs-fixer.php');
+            $configPath = base_path('.php-cs-fixer.php');
 
-        $regenerateConfig = true;
+            $regenerateConfig = true;
 
-        if (file_exists($configPath)) {
-            $existing = file_get_contents($configPath);
-            if ($existing !== false && strpos($existing, '@Laravel') === false) {
-                $regenerateConfig = false;
+            if (file_exists($configPath)) {
+                $existing = file_get_contents($configPath);
+                if ($existing !== false && strpos($existing, '@Laravel') === false) {
+                    $regenerateConfig = false;
+                }
             }
-        }
 
-        if ($regenerateConfig) {
-            file_put_contents(
-                $configPath,
-                "<?php
+            if ($regenerateConfig) {
+                file_put_contents(
+                    $configPath,
+                    "<?php
 
 use PhpCsFixer\\Config;
 use PhpCsFixer\\Finder;
@@ -74,52 +75,122 @@ return (new Config())
     ])
     ->setFinder(\$finder);
 "
-            );
-        }
-
-        $binPath = realpath(__DIR__ . '/../..') . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'bin' . DIRECTORY_SEPARATOR;
-
-        if (strncasecmp(PHP_OS, 'WIN', 3) === 0) {
-            $phpCsFixer = $binPath . 'php-cs-fixer.bat';
-            if (!file_exists($phpCsFixer)) {
-                $phpCsFixer = $binPath . 'php-cs-fixer';
+                );
             }
-            if (!file_exists($phpCsFixer)) {
+
+            $binPath = realpath(__DIR__ . '/../..') . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'bin' . DIRECTORY_SEPARATOR;
+
+            $phpCsFixer = null;
+
+            if (strncasecmp(PHP_OS, 'WIN', 3) === 0) {
+                $windowsBat = $binPath . 'php-cs-fixer.bat';
+                $windowsExe = $binPath . 'php-cs-fixer';
+
+                if (file_exists($windowsBat)) {
+                    $phpCsFixer = $windowsBat;
+                } elseif (file_exists($windowsExe)) {
+                    $phpCsFixer = $windowsExe;
+                }
+            } else {
+                $unixPath = $binPath . 'php-cs-fixer';
+                if (file_exists($unixPath)) {
+                    $phpCsFixer = $unixPath;
+                }
+            }
+
+            if ($phpCsFixer === null) {
+                $projectBin = base_path('vendor/bin/php-cs-fixer');
+                $projectBinBat = base_path('vendor/bin/php-cs-fixer.bat');
+
+                if (file_exists($projectBin)) {
+                    $phpCsFixer = $projectBin;
+                } elseif (file_exists($projectBinBat)) {
+                    $phpCsFixer = $projectBinBat;
+                }
+            }
+
+            if ($phpCsFixer === null) {
                 return;
             }
 
-            $command = [
-                $phpCsFixer,
-                'fix',
-                $targetPath,
-                '--config=' . $configPath,
-                '--allow-risky=yes',
-                '--using-cache=yes',
-                '--allow-unsupported-php-version=yes',
-                '--show-progress=none',
-            ];
-        } else {
-            $phpCsFixer = $binPath . 'php-cs-fixer';
-            if (!file_exists($phpCsFixer)) {
-                return;
+            $command = [];
+
+            if (strncasecmp(PHP_OS, 'WIN', 3) === 0) {
+                $command = [
+                    $phpCsFixer,
+                    'fix',
+                    $targetPath,
+                    '--config=' . $configPath,
+                    '--allow-risky=yes',
+                    '--using-cache=yes',
+                    '--allow-unsupported-php-version=yes',
+                    '--show-progress=none',
+                ];
+            } else {
+                $command = [
+                    PHP_BINARY,
+                    $phpCsFixer,
+                    'fix',
+                    $targetPath,
+                    '--config=' . $configPath,
+                    '--allow-risky=yes',
+                    '--using-cache=yes',
+                    '--allow-unsupported-php-version=yes',
+                    '--show-progress=none',
+                ];
             }
 
-            $command = [
-                PHP_BINARY,
-                $phpCsFixer,
-                'fix',
-                $targetPath,
-                '--config=' . $configPath,
-                '--allow-risky=yes',
-                '--using-cache=yes',
-                '--allow-unsupported-php-version=yes',
-                '--show-progress=none',
-            ];
-        }
+            try {
+                $process = new Process($command);
+                $process->run();
 
-        $process = new Process($command);
-        $process->run();
+                if (!$process->isSuccessful()) {
+                    $fallback = base_path('vendor/bin/php-cs-fixer');
+
+                    if (file_exists($fallback)) {
+                        $fallbackCommand = [
+                            PHP_BINARY,
+                            $fallback,
+                            'fix',
+                            $targetPath,
+                            '--config=' . $configPath,
+                            '--allow-risky=yes',
+                            '--using-cache=yes',
+                            '--allow-unsupported-php-version=yes',
+                            '--show-progress=none',
+                        ];
+
+                        $fallbackProcess = new Process($fallbackCommand);
+                        $fallbackProcess->run();
+                    }
+                }
+            } catch (\Throwable $e) {
+                $fallback = base_path('vendor/bin/php-cs-fixer');
+
+                if (file_exists($fallback)) {
+                    $fallbackCommand = [
+                        PHP_BINARY,
+                        $fallback,
+                        'fix',
+                        $targetPath,
+                        '--config=' . $configPath,
+                        '--allow-risky=yes',
+                        '--using-cache=yes',
+                        '--allow-unsupported-php-version=yes',
+                        '--show-progress=none',
+                    ];
+
+                    try {
+                        $fallbackProcess = new Process($fallbackCommand);
+                        $fallbackProcess->run();
+                    } catch (\Throwable $ignored) {
+                    }
+                }
+            }
+        } catch (\Throwable $ignored) {
+        }
     }
+
 
 
 

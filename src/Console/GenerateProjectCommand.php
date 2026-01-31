@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Config;
 use quintenmbusiness\LaravelProjectGeneration\ClassGeneration\GenerationService;
 use quintenmbusiness\LaravelProjectGeneration\DataLayerGeneration\FactoryGenerator;
 use quintenmbusiness\LaravelProjectGeneration\DataLayerGeneration\ModelGenerator;
+use quintenmbusiness\LaravelProjectGeneration\DataLayerGeneration\Tests\ModelUnitTestsGenerator;
 use Symfony\Component\Console\Helper\Table;
 use function Laravel\Prompts\confirm;
 use function Laravel\Prompts\multiSelect;
@@ -110,10 +111,12 @@ class GenerateProjectCommand extends Command
             options: [
                 ModelGenerator::class => 'Model',
                 FactoryGenerator::class => 'Factory',
+                ModelUnitTestsGenerator::class => 'ModelTest',
             ],
             default: [
                 'Model',
                 'Factory',
+                'ModelTest',
             ],
             required: true
         );
