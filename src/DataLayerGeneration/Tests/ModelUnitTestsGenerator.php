@@ -4,8 +4,6 @@ namespace quintenmbusiness\LaravelProjectGeneration\DataLayerGeneration\Tests;
 
 use Illuminate\Support\Str;
 use quintenmbusiness\LaravelProjectGeneration\ClassGeneration\ClassGeneratorTemplate;
-use quintenmbusiness\LaravelAnalyzer\Modules\Database\DTO\Relationships\RelationshipDTO;
-use quintenmbusiness\LaravelAnalyzer\Modules\Database\DTO\Relationships\RelationThroughDTO;
 use quintenmbusiness\LaravelAnalyzer\Modules\Database\Enum\ModelRelationshipType;
 use quintenmbusiness\LaravelProjectGeneration\Tools\ClassType;
 
@@ -13,25 +11,43 @@ class ModelUnitTestsGenerator extends ClassGeneratorTemplate
 {
     public function getClassType(): ClassType
     {
-        return ClassType::MODEL;
+        return ClassType::MODEL_TEST;
     }
 
     public function getPath(): string
     {
         $dir = base_path('tests/Unit/Models');
         if (!is_dir($dir)) mkdir($dir, 0755, true);
-        return $dir . DIRECTORY_SEPARATOR . $this->getClassName() . 'Test.php';
+        return $dir . DIRECTORY_SEPARATOR . $this->getClassName() . '.php';
+    }
+
+    protected function addImport(string $fqcn): void
+    {
+        $fqcn = trim($fqcn, '\\');
+        if (!$this->imports->contains($fqcn)) {
+            $this->imports->add($fqcn);
+        }
+    }
+
+    protected function addModelImport(string $class): void
+    {
+        $this->addImport(ClassType::MODEL->namespace($this->table->name) . '\\' . $class);
+    }
+
+    protected function buildHeaderImports(string $modelClass): void
+    {
+        $this->addImport('Tests\\TestCase');
+        $this->addImport('Illuminate\\Foundation\\Testing\\RefreshDatabase');
+        $this->addModelImport($modelClass);
     }
 
     protected function inferFillable(): array
     {
-        $fillable = $this->table->columns
+        return $this->table->columns
             ->pluck('name')
             ->reject(fn($n) => in_array($n, ['id', 'created_at', 'updated_at', 'deleted_at']))
             ->values()
             ->toArray();
-
-        return $fillable;
     }
 
     protected function inferCasts(): array
@@ -56,117 +72,80 @@ class ModelUnitTestsGenerator extends ClassGeneratorTemplate
         return $casts;
     }
 
-    protected function relationPhpUnitAssertionClass(ModelRelationshipType $type): ?string
+    protected function relationAssertionClass(ModelRelationshipType $type): ?string
     {
         return match ($type) {
-            ModelRelationshipType::BELONGS_TO => '\\Illuminate\\Database\\Eloquent\\Relations\\BelongsTo',
-            ModelRelationshipType::HAS_MANY => '\\Illuminate\\Database\\Eloquent\\Relations\\HasMany',
-            ModelRelationshipType::HAS_ONE => '\\Illuminate\\Database\\Eloquent\\Relations\\HasOne',
+            ModelRelationshipType::BELONGS_TO => 'Illuminate\\Database\\Eloquent\\Relations\\BelongsTo',
+            ModelRelationshipType::HAS_MANY => 'Illuminate\\Database\\Eloquent\\Relations\\HasMany',
+            ModelRelationshipType::HAS_ONE => 'Illuminate\\Database\\Eloquent\\Relations\\HasOne',
             default => null
         };
     }
 
-    protected function buildTestClassString(): string
+    protected function buildTestMethods(string $modelClass): void
     {
-        $modelClass = $this->getClassType()->namespace($this->table->name) . '\\' . $this->getClassName();
-        $testClassNamespace = 'Tests\\Unit\\Models';
-        $className = $this->getClassName() . 'Test';
-        $modelShort = $this->getClassName();
+        $fillable = var_export($this->inferFillable(), true);
 
-        $fillable = $this->inferFillable();
-        $fillableExport = var_export(array_values($fillable), true);
+        $this->buildMethod(
+            'test_fillable_contains_expected_attributes',
+            '$model = new ' . $modelClass . '();
+$expected = ' . $fillable . ';
+$actual = $model->getFillable();
+sort($expected);
+sort($actual);
+$this->assertSame($expected, $actual);',
+            'void'
+        );
 
-        $relations = [];
         foreach ($this->table->relations as $relation) {
-            $relations[] = [
-                'name' => $relation->relationName,
-                'type' => $relation->type,
-            ];
-        }
+            $assertClass = $this->relationAssertionClass($relation->type);
 
-
-        $relationAssertions = '';
-        foreach ($relations as $r) {
-            $assertClass = $this->relationPhpUnitAssertionClass($r['type']);
-            $relationAssertions .= <<<PHP
-                    public function test_relation_{$r['name']}_exists_and_returns_relation()
-                    {
-                        \$model = new {$modelShort}();
-                        \$this->assertTrue(method_exists(\$model, '{$r['name']}'));
-                        \$relation = \$model->{$r['name']}();
-                        \$this->assertInstanceOf({$assertClass}::class, \$relation);
-                    }
-PHP;
-        }
-
-        $factoryTest = <<<PHP
-
-    public function test_factory_can_make_instance()
-    {
-        if (! method_exists({$modelShort}::class, 'factory')) {
-            \$this->assertTrue(true);
-            return;
-        }
-
-        \$instance = {$modelShort}::factory()->make();
-        \$this->assertInstanceOf({$modelShort}::class, \$instance);
-    }
-PHP;
-
-        $casts = $this->inferCasts();
-        $castsAssertions = '';
-        if ($casts) {
-            foreach ($casts as $k => $v) {
-                $castsAssertions .= <<<PHP
-
-                public function test_cast_for_{$k}_is_{$v}()
-                {
-                    \$model = new {$modelShort}();
-                    \$this->assertArrayHasKey('{$k}', \$model->getCasts());
-                    \$this->assertSame('{$v}', \$model->getCasts()['{$k}']);
-                }
-PHP;
+            if (!$assertClass) {
+                continue;
             }
+
+            $this->addImport($assertClass);
+
+            $this->buildMethod(
+                'test_relation_' . $relation->relationName . '_exists_and_returns_relation',
+                '$model = new ' . $modelClass . '();
+$this->assertTrue(method_exists($model, \'' . $relation->relationName . '\'));
+$relation = $model->' . $relation->relationName . '();
+$this->assertInstanceOf(' . class_basename($assertClass) . '::class, $relation);',
+                'void'
+            );
         }
 
-        $fillableTest = <<<PHP
-            public function test_fillable_contains_expected_attributes()
-            {
-                \$model = new {$modelShort}();
-                \$expected = {$fillableExport};
-                \$actual = \$model->getFillable();
-                sort(\$expected);
-                sort(\$actual);
-                \$this->assertSame(\$expected, \$actual);
-            }
-PHP;
+        foreach ($this->inferCasts() as $field => $cast) {
+            $this->buildMethod(
+                'test_cast_for_' . $field . '_is_' . $cast,
+                '$model = new ' . $modelClass . '();
+$this->assertArrayHasKey(\'' . $field . '\', $model->getCasts());
+$this->assertSame(\'' . $cast . '\', $model->getCasts()[\'' . $field . '\']);',
+                'void'
+            );
+        }
 
-        $uses = "use Tests\\TestCase;\nuse Illuminate\\Foundation\\Testing\\RefreshDatabase;\nuse {$modelClass};";
-
-        $full = <<<PHP
-        <?php
-            
-            namespace {$testClassNamespace};
-            
-            {$uses}
-            
-            class {$className} extends TestCase
-            {
-                use RefreshDatabase;
-                
-                {$fillableTest}
-                {$relationAssertions}
-                {$castsAssertions}
-                {$factoryTest}
-            }
-        PHP;
-
-        return $full;
+        $this->buildMethod(
+            'test_factory_can_make_instance',
+            'if (!method_exists(' . $modelClass . '::class, \'factory\')) {
+    $this->assertTrue(true);
+    return;
+}
+$instance = ' . $modelClass . '::factory()->make();
+$this->assertInstanceOf(' . $modelClass . '::class, $instance);',
+            'void'
+        );
     }
 
     public function generate(): void
     {
-        $content = $this->buildTestClassString();
-        $this->fileGenerator->createFile($this->getPath(), $content);
+        $modelClass = Str::studly(Str::singular($this->table->name));
+
+        $this->buildHeaderImports($modelClass);
+
+        $this->buildTestMethods($modelClass);
+
+        $this->fileGenerator->createFile($this->getPath(), $this->writeClass());
     }
 }

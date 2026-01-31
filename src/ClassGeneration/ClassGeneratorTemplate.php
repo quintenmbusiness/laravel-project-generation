@@ -47,6 +47,8 @@ abstract class ClassGeneratorTemplate
 
     public function writeClass(): string
     {
+        $this->addNeededUses();
+
         return implode("\n", array_filter([
             '<?php',
             '',
@@ -58,6 +60,19 @@ abstract class ClassGeneratorTemplate
             $this->writeMethods(),
             '}',
         ]));
+    }
+
+    public function addNeededUses(): void
+    {
+        foreach ($this->getClassType()->uses() as $use) {
+            $this->addUse($use);
+        }
+    }
+
+    public function addUse(string $class): void
+    {
+        $this->imports->add($class);
+        $this->uses->add($class);
     }
 
     protected function writeImports(): string
